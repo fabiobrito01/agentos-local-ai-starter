@@ -1,3 +1,5 @@
+[![AgentOS Local AI](assets/banner.svg)](http://127.0.0.1:8787)
+
 # AgentOS Local AI Starter
 
 Assistente de IA local, privado e sem telemetria, com interface web e integração direta com [Ollama](https://ollama.com/).

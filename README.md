@@ -13,6 +13,13 @@ python app.py
 
 Abra `http://127.0.0.1:8787`. Configure outro modelo com `OLLAMA_MODEL` e outro servidor com `OLLAMA_URL`.
 
+## Novidades
+
+- `GET /api/health` verifica se o Ollama está disponível.
+- `GET /api/models` lista modelos locais instalados.
+- Validação de mensagens, limite de requisição e cabeçalhos seguros por padrão.
+- Configure o limite com `AGENTOS_MAX_BODY` em bytes.
+
 ## Segurança
 
 O servidor escuta apenas em `127.0.0.1`. Não o exponha à internet sem autenticação e HTTPS.

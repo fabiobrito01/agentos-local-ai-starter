@@ -2,7 +2,7 @@
 import json
 import os
 import urllib.request
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 OLLAMA = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
@@ -10,10 +10,11 @@ MAX_BODY = int(os.getenv("AGENTOS_MAX_BODY", "1048576"))
 
 
 def valid_messages(value):
-    return isinstance(value, list) and bool(value) and all(
+    return isinstance(value, list) and 0 < len(value) <= 200 and all(
         isinstance(item, dict)
         and item.get("role") in {"system", "user", "assistant"}
         and isinstance(item.get("content"), str)
+        and 0 < len(item.get("content")) <= 100_000
         for item in value
     )
 
@@ -58,7 +59,14 @@ class Handler(SimpleHTTPRequestHandler):
             if not valid_messages(body.get("messages")):
                 self._json(400, {"error": "messages deve conter role e content válidos"})
                 return
-            payload = json.dumps({"model": body.get("model") or MODEL, "messages": body["messages"], "stream": False}).encode()
+            options = {}
+            if "temperature" in body:
+                temperature = float(body["temperature"])
+                if not 0 <= temperature <= 2:
+                    self._json(400, {"error": "temperature deve estar entre 0 e 2"})
+                    return
+                options["temperature"] = temperature
+            payload = json.dumps({"model": body.get("model") or MODEL, "messages": body["messages"], "stream": False, "options": options}).encode()
             request = urllib.request.Request(f"{OLLAMA}/api/chat", payload, {"Content-Type": "application/json"})
             with urllib.request.urlopen(request, timeout=120) as response:
                 self._json(200, json.loads(response.read()))
@@ -69,4 +77,4 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     os.chdir(os.path.join(os.path.dirname(__file__), "web"))
     print("AgentOS Local AI: http://127.0.0.1:8787")
-    HTTPServer(("127.0.0.1", 8787), Handler).serve_forever()
+    ThreadingHTTPServer(("127.0.0.1", 8787), Handler).serve_forever()
